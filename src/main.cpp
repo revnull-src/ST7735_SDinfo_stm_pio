@@ -2,7 +2,7 @@
 // SD Card Info, Tester and CID Analyzer
 // Requires SdFat, Arduino_ST7735_STM and RRE font libraries
 // (C)2017-20 Pawel A. Hernik
-// YouTube video: https://youtu.be/s2bYx58kJ_U 
+// YouTube video: https://youtu.be/s2bYx58kJ_U
 
 /*
  ST7735 128x160 1.8" LCD pinout (header at the top, from left):
@@ -24,7 +24,7 @@
 
 /*
  STM32 SPI1/SPI2 pins:
- 
+
  SPI1 MOSI PA7
  SPI1 MISO PA6
  SPI1 SCK  PA5
@@ -72,7 +72,7 @@ const int8_t DISABLE_CHIP_SELECT = -1;
 //const uint8_t SD_CS = PB12;
 //SdFat sd(2);
 const uint8_t SD_CS = PA4;
-SdFat sd(1);
+SdFat sd;
 
 uint32_t cardSize;
 uint32_t eraseSize;
@@ -83,7 +83,7 @@ uint32_t eraseSize;
 #define ORANGE  RGBto565(255,105,0)
 #define DGREEN  RGBto565(0,160,0)
 #define PINK    RGBto565(225,180,175)
-#define MAGENTA RGBto565(255,100,255)
+//#define MAGENTA RGBto565(255,100,255)
 
 // use 10 and 5 for more optimal text density
 #define LINE_HT 9
@@ -163,13 +163,13 @@ void sdSPI()
 int xp=0, yp=0;
 char txt[40];
 int xpSt = 1;
+void incY() { yp += LINE_HT; }
+
 void incX(int wd)
 {
   xp+=wd;
   if(xp>=SCR_WD) {  xp = xpSt; incY(); }
 }
-
-void incY() { yp+=LINE_HT; }
 
 int printString(const char *str)
 {
@@ -187,7 +187,7 @@ int printString(const char *str)
   return xp;
 }
 
-int printStringCol(const char *str, uint16_t col)
+void printStringCol(const char *str, uint16_t col)
 {
   font.setColor(col);
   printString(str);
@@ -236,7 +236,7 @@ const char *toManuf(int val)
   }
 }
 
-uint8_t showCID() 
+uint8_t showCID()
 {
   cid_t cid;
   if(!sd.card()->readCID(&cid)) {
@@ -300,6 +300,7 @@ const char *toTAAC3_6(int val)
     case 13:  return "6.0" ;break;
     case 14:  return "7.0" ;break;
     case 15:  return "8.0" ;break;
+    default:  return "??" ;break;
   }
 }
 
@@ -314,6 +315,7 @@ const char *toTAAC0_2(int val)
     case 5:  return "100us" ; break;
     case 6:  return "1ms" ; break;
     case 7:  return "10ms" ; break;
+    default:  return "??" ;break;
   }
 }
 
@@ -381,16 +383,14 @@ const char *toTransSpeedV2(int val)
 const char *toFileFormat(int val)
 {
   switch(val&3){
-    //case 0:  return "HardDisk/part"; break;
     case 0:  return "HDD/part"; break;
-    //case 1:  return "Floppy/boot"; break;
     case 1:  return "FDD/boot"; break;
     case 2:  return "UFS"; break;
     default: return "Other" ; break;
   }
 }
 
-uint8_t showCSD() 
+uint8_t showCSD()
 {
   csd_t csd;
   uint8_t eraseSingleBlock;
@@ -429,14 +429,14 @@ uint8_t showCSD()
   }
   eraseSize++;
   font.setColor(cardCol);
-  printString("Card Size:  "); dtostrf(0.000512*cardSize,4,0,txt); printString(txt); printString("MB\n"); 
+  printString("Card Size:  "); dtostrf(0.000512*cardSize,4,0,txt); printString(txt); printString("MB\n");
   sprintf(txt,"EraseSize:  %d blcks\n", int(eraseSize)); printString(txt);
   sprintf(txt,"EraseSingl: %s\n", eraseSingleBlock ? "YES":"NO"); printString(txt);
   return 1;
 }
 //------------------------------------------------------------------------------
 
-uint8_t showPartTab() 
+uint8_t showPartTab()
 {
   sdSPI();
   mbr_t mbr;
@@ -468,11 +468,11 @@ uint8_t showPartTab()
     if(!pt->type) continue;
     sprintf(txt,"%d %02x %02x", int(ip),int(pt->boot),int(pt->type));
     xp=1;
-    printString(txt);  
+    printString(txt);
     sprintf(txt,"%dk", pt->firstSector/1024);
-    xp=1+6*8; printString(txt);  
+    xp=1+6*8; printString(txt);
     sprintf(txt,"%dk\n", pt->totalSectors/1024);
-    xp=1+6*15; printString(txt);  
+    xp=1+6*15; printString(txt);
   }
   lcdSPI();
   int yf = 17+LINE_GAP*3+5, hf=yp-yf+1;
@@ -492,7 +492,7 @@ uint8_t showPartTab()
 
 //------------------------------------------------------------------------------
 
-void showFileSystem() 
+void showFileSystem()
 {
   if(!sd.fsBegin()) {
     font.setBold(1);
@@ -513,7 +513,7 @@ void showFileSystem()
   lcdSPI(); lcd.fillRect(xp,yp,SCR_WD,8, bgCol);
   sprintf(txt,"FreeClusters: %ld\n", volFree); printString(txt);
   float fs = 0.000512*volFree*sd.vol()->blocksPerCluster();
-  printString("FreeSpace:    "); dtostrf(fs,2,0,txt); printString(txt); printString("MB\n"); 
+  printString("FreeSpace:    "); dtostrf(fs,2,0,txt); printString(txt); printString("MB\n");
   sprintf(txt,"FATStartBlk:  %d\n",  sd.vol()->fatStartBlock()); printString(txt);
   sprintf(txt,"FATCount:     %d\n",  int(sd.vol()->fatCount())); printString(txt);
   sprintf(txt,"BlocksPerFAT: %d\n",  sd.vol()->blocksPerFat()); printString(txt);
@@ -609,29 +609,29 @@ int showStatus()
 
 // ------------------------------------------------
 
-#define PROGRAM_CID_OPCODE    26
-#define SAMSUNG_VENDOR_OPCODE 62
-#define ENTER_VENDOR          0xEFAC62EC
-#define EXIT_VENDOR           0x00DECCEE
-#define UNLOCK_CID_WRITE      0xEF50
+// #define PROGRAM_CID_OPCODE 26
+// #define SAMSUNG_VENDOR_OPCODE 62
+// #define ENTER_VENDOR 0xEFAC62EC
+// #define EXIT_VENDOR 0x00DECCEE
+// #define UNLOCK_CID_WRITE 0xEF50
 
-int checkCIDhack()
-{
-  int retEn = sd.card()->cardCommand(SAMSUNG_VENDOR_OPCODE, ENTER_VENDOR);
-  int retCW = sd.card()->cardCommand(SAMSUNG_VENDOR_OPCODE, UNLOCK_CID_WRITE);
-  int retEx = sd.card()->cardCommand(SAMSUNG_VENDOR_OPCODE, EXIT_VENDOR);
-  yp+=2;
-  sprintf(txt,"Enter Vendor: "); printStringCol(txt,vendCol);
-  sprintf(txt,"%s (%X)\n",retEn?"NO":"YES",retEn); printStringCol(txt,retEn?errCol:okCol);
-  if(retEn==0) {
-    sprintf(txt,"CID Write:    "); printStringCol(txt,vendCol);
-    sprintf(txt,"%s (%X)\n",retCW?"NO":"YES",retCW); printStringCol(txt,retCW?errCol:okCol);
-    sprintf(txt,"Exit Vendor:  "); printStringCol(txt,vendCol);
-    sprintf(txt,"%s (%X)\n",retEx?"NO":"YES",retEx); printStringCol(txt,retEx?errCol:okCol);
-    //if(ret==0 && ret2==0) printStringCol("CID UNLOCKED\n",okCol); else printStringCol("CID LOCKED\n",errCol); 
-  } else printStringCol("CID CHANGE:   LOCKED\n",errCol); 
-  return 1;
-}
+// int checkCIDhack()
+// {
+//   int retEn = sd.card()->cardCommand(SAMSUNG_VENDOR_OPCODE, ENTER_VENDOR);
+//   int retCW = sd.card()->cardCommand(SAMSUNG_VENDOR_OPCODE, UNLOCK_CID_WRITE);
+//   int retEx = sd.card()->cardCommand(SAMSUNG_VENDOR_OPCODE, EXIT_VENDOR);
+//   yp+=2;
+//   sprintf(txt,"Enter Vendor: "); printStringCol(txt,vendCol);
+//   sprintf(txt,"%s (%X)\n",retEn?"NO":"YES",retEn); printStringCol(txt,retEn?errCol:okCol);
+//   if(retEn==0) {
+//     sprintf(txt,"CID Write:    "); printStringCol(txt,vendCol);
+//     sprintf(txt,"%s (%X)\n",retCW?"NO":"YES",retCW); printStringCol(txt,retCW?errCol:okCol);
+//     sprintf(txt,"Exit Vendor:  "); printStringCol(txt,vendCol);
+//     sprintf(txt,"%s (%X)\n",retEx?"NO":"YES",retEx); printStringCol(txt,retEx?errCol:okCol);
+//     //if(ret==0 && ret2==0) printStringCol("CID UNLOCKED\n",okCol); else printStringCol("CID LOCKED\n",errCol);
+//   } else printStringCol("CID CHANGE:   LOCKED\n",errCol);
+//   return 1;
+// }
 
 // --------------------------------------------------------------------------
 #define BUTTON PB9
@@ -650,11 +650,11 @@ int checkButton()
   if( state == LOW && stateOld == HIGH ) { btTime = millis(); stateOld = state; return 0; } // button just pressed
   if( state == HIGH && stateOld == LOW ) { // button just released
     stateOld = state;
-    if( millis()-btTime >= btDebounce && millis()-btTime < btLongClick ) { 
+    if( millis()-btTime >= btDebounce && millis()-btTime < btLongClick ) {
       if( millis()-btTime2<btDoubleClick ) clickCnt++; else clickCnt=1;
       btTime2 = millis();
-      return clickCnt; 
-    } 
+      return clickCnt;
+    }
   }
   if( state == LOW && millis()-btTime >= btLongerClick ) { stateOld = state; return -2; }
   if( state == LOW && millis()-btTime >= btLongClick ) { stateOld = state; return -1; }
@@ -667,14 +667,14 @@ void setColorSet(int set)
     bgCol = BLACK;
     errCol = RED;
     okCol = GREEN;
-    
+
     tabActCol    = RGBto565(0,150,150);
     tabActTxtCol = WHITE;
     tabActLinCol = RGBto565(0,255,255);
     tabIdlCol    = RGBto565(120,120,120);
     tabIdlTxtCol = RGBto565(90,90,90);
     tabIdlLinCol = RGBto565(200,200,200);
-    
+
     cid1Col = GREEN;
     cid2Col = ORANGE;
     cid3Col = CYAN;
@@ -696,14 +696,14 @@ void setColorSet(int set)
     bgCol  = RGBto565(140,140,140);
     errCol = RGBto565(250,0,0);
     okCol  = RGBto565(80,250,80);
-    
+
     tabActCol    = bgCol;
     tabActTxtCol = WHITE;
     tabActLinCol = RGBto565(220,220,220);
     tabIdlCol    = RGBto565(100,100,100);
     tabIdlTxtCol = RGBto565(60,60,60);
     tabIdlLinCol = RGBto565(160,160,160);
-    
+
     cid1Col = RGBto565(100,250,100); // MID
     cid2Col = RGBto565(255,200,120); // OID
     cid3Col = RGBto565(100,250,250); // PNM
@@ -711,7 +711,7 @@ void setColorSet(int set)
     cid5Col = YELLOW; // PSN
     cid6Col = RGBto565(220,220,220); // MDT
     cid7Col = RGBto565(255,40,40); // CRC
-    
+
     vendCol  = WHITE;
     hdCol    = RGBto565(0,0,180);
     part1Col = RGBto565(160,80,0);
@@ -750,7 +750,7 @@ void drawTabs(int mode)
   lcd.drawPixel(i==3 ? 32*(i+1)-2 : 32*(i+1)-1,1,c);
   lcd.drawFastHLine(0,12,32*i+1,c);
   if(i<3) lcd.drawFastHLine(32*(i+1),12,32*(3-i),c); else lcd.drawFastHLine(32*(i+1)-1,12,1,c);
-  
+
   font.setColor(mode==0 ? tabActTxtCol : tabIdlTxtCol); font.printStr(7,3,"CID");
   font.setColor(mode==1 ? tabActTxtCol : tabIdlTxtCol); font.printStr(40,3,"CSD");
   font.setColor(mode==2 ? tabActTxtCol : tabIdlTxtCol); font.printStr(70,3,"Part");
@@ -795,7 +795,7 @@ void loop(void)
     goto wait;
   }
   drawTabs(screen);
- 
+
   sdSPI();
   cardSize = sd.card()->cardSize();
   if(cardSize <= 0) {
@@ -806,7 +806,7 @@ void loop(void)
     goto wait;
   }
   switch(screen) {
-    case 0: showStatus(); showCID(); checkCIDhack(); break;
+    case 0: showStatus(); showCID(); break; // checkCIDhack(); break;
     case 1: showCSD(); showOCR(); break;
     case 2: showPartTab(); break;
     case 3: showFileSystem(); break;
