@@ -60,10 +60,10 @@ Arduino_ST7735 lcd = Arduino_ST7735(TFT_DC, TFT_RST, TFT_CS);
 
 RREFont font;
 
-// -------------------------
+//------------------------------------------------------------------------------
 // needed for RREFont library initialization, define your fillRect
 void customRect(int x, int y, int w, int h, int c) { lcd.fillRect(x, y, w, h, c); }
-// -------------------------
+//------------------------------------------------------------------------------
 
 #include "SdFat.h"
 
@@ -72,6 +72,7 @@ const int8_t DISABLE_CHIP_SELECT = -1;
 //const uint8_t SD_CS = PB12;
 //SdFat sd(2);
 const uint8_t SD_CS = PA4;
+//SdFat sd(1);
 SdFat sd;
 
 uint32_t cardSize;
@@ -193,7 +194,7 @@ void printStringCol(const char *str, uint16_t col)
   printString(str);
 }
 
-// ------------------------------------------------
+//------------------------------------------------------------------------------
 
 char str[30];
 const char *val2dec(int val, char *end=NULL)
@@ -207,7 +208,7 @@ const char *val2hex(int val, char *end=NULL)
   return str;
 }
 
-// ------------------------------------------------
+//------------------------------------------------------------------------------
 
 const char *toManuf(int val)
 {
@@ -275,10 +276,11 @@ uint8_t showCID()
   sprintf(txt,"PrdID:  "); font.setColor(cid3Col); printString(txt);
   for (uint8_t i = 0; i < 5; i++) { sprintf(txt,"%c",cid.pnm[i]); printString(txt); }
   sprintf(txt,"\nRev:    %d.%d\n", int(cid.prv_n), int(cid.prv_m)); font.setColor(cid4Col); printString(txt);
-  sprintf(txt,"Serial: %02X%02X%02X%02X\n",cid.psn&0xff,(cid.psn>>8)&0xff,(cid.psn>>16)&0xff,(cid.psn>>24)&0xff); font.setColor(cid5Col); printString(txt);
+  sprintf(txt,"Serial: %02lX%02lX%02lX%02lX\n",cid.psn&0xff,(cid.psn>>8)&0xff,(cid.psn>>16)&0xff,(cid.psn>>24)&0xff); font.setColor(cid5Col); printString(txt);
   sprintf(txt,"MnfDat: %d/%d\n",int(cid.mdt_month),(2000 + cid.mdt_year_low + 10 * cid.mdt_year_high)); font.setColor(cid6Col); printString(txt);
   return 1;
 }
+
 //------------------------------------------------------------------------------
 
 const char *toTAAC3_6(int val)
@@ -434,6 +436,7 @@ uint8_t showCSD()
   sprintf(txt,"EraseSingl: %s\n", eraseSingleBlock ? "YES":"NO"); printString(txt);
   return 1;
 }
+
 //------------------------------------------------------------------------------
 
 uint8_t showPartTab()
@@ -469,9 +472,9 @@ uint8_t showPartTab()
     sprintf(txt,"%d %02x %02x", int(ip),int(pt->boot),int(pt->type));
     xp=1;
     printString(txt);
-    sprintf(txt,"%dk", pt->firstSector/1024);
+    sprintf(txt,"%ldk", pt->firstSector/1024);
     xp=1+6*8; printString(txt);
-    sprintf(txt,"%dk\n", pt->totalSectors/1024);
+    sprintf(txt,"%ldk\n", pt->totalSectors/1024);
     xp=1+6*15; printString(txt);
   }
   lcdSPI();
@@ -506,7 +509,7 @@ void showFileSystem()
   yp+=LINE_GAP;
   font.setColor(fsCol);
   sprintf(txt,"Blocks/Clust: %d\n", int(sd.vol()->blocksPerCluster())); printString(txt);
-  sprintf(txt,"ClusterCount: %d\n",  sd.vol()->clusterCount() ); printString(txt);
+  sprintf(txt,"ClusterCount: %ld\n", sd.vol()->clusterCount()); printString(txt);
   printStringCol("Reading...",hdCol); font.setColor(fsCol);
   uint32_t volFree = sd.vol()->freeClusterCount();
   xp=0;
@@ -514,17 +517,17 @@ void showFileSystem()
   sprintf(txt,"FreeClusters: %ld\n", volFree); printString(txt);
   float fs = 0.000512*volFree*sd.vol()->blocksPerCluster();
   printString("FreeSpace:    "); dtostrf(fs,2,0,txt); printString(txt); printString("MB\n");
-  sprintf(txt,"FATStartBlk:  %d\n",  sd.vol()->fatStartBlock()); printString(txt);
+  sprintf(txt,"FATStartBlk:  %ld\n",  sd.vol()->fatStartBlock()); printString(txt);
   sprintf(txt,"FATCount:     %d\n",  int(sd.vol()->fatCount())); printString(txt);
-  sprintf(txt,"BlocksPerFAT: %d\n",  sd.vol()->blocksPerFat()); printString(txt);
-  sprintf(txt,"RootDirStart: %d\n",  sd.vol()->rootDirStart()); printString(txt);
-  sprintf(txt,"DataStartBlk: %d\n",    sd.vol()->dataStartBlock()); printString(txt);
+  sprintf(txt,"BlocksPerFAT: %ld\n",  sd.vol()->blocksPerFat()); printString(txt);
+  sprintf(txt,"RootDirStart: %ld\n",  sd.vol()->rootDirStart()); printString(txt);
+  sprintf(txt,"DataStartBlk: %ld\n",    sd.vol()->dataStartBlock()); printString(txt);
   sprintf(txt,"Align:        "); printString(txt);
   sdSPI();
   if(sd.vol()->dataStartBlock() % eraseSize) printStringCol("BAD",errCol); else printStringCol("OK",okCol);
 }
 
-// ------------------------------------------------
+//------------------------------------------------------------------------------
 
 int showOCR()
 {
@@ -534,7 +537,7 @@ int showOCR()
     return 0;
   }
   yp+=LINE_GAP;
-  sprintf(txt,"OCR:        %08X\n",ocr); printStringCol(txt,ocrCol);
+  sprintf(txt,"OCR:        %08lX\n",ocr); printStringCol(txt,ocrCol);
   printString("VDD 2.7-3.6V:");
   if((ocr&0xff8000)==0xff8000) printString(" ALL"); else {
     int b = (1<<15);
@@ -549,7 +552,7 @@ int showOCR()
   return 1;
 }
 
-// ------------------------------------------------
+//------------------------------------------------------------------------------
 
 const char *toClass(int val)
 {
@@ -607,13 +610,13 @@ int showStatus()
   return 1;
 }
 
-// ------------------------------------------------
+//------------------------------------------------------------------------------
 
-// #define PROGRAM_CID_OPCODE 26
-// #define SAMSUNG_VENDOR_OPCODE 62
-// #define ENTER_VENDOR 0xEFAC62EC
-// #define EXIT_VENDOR 0x00DECCEE
-// #define UNLOCK_CID_WRITE 0xEF50
+#define PROGRAM_CID_OPCODE    26
+#define SAMSUNG_VENDOR_OPCODE 62
+#define ENTER_VENDOR          0xEFAC62EC
+#define EXIT_VENDOR           0x00DECCEE
+#define UNLOCK_CID_WRITE      0xEF50
 
 // int checkCIDhack()
 // {
@@ -633,13 +636,14 @@ int showStatus()
 //   return 1;
 // }
 
-// --------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
 #define BUTTON PB9
 int stateOld = HIGH;
-long btDebounce    = 30;
-long btDoubleClick = 600;
-long btLongClick   = 500;
-long btLongerClick = 2000;
+unsigned long btDebounce = 30;
+unsigned long btDoubleClick = 600;
+unsigned long btLongClick = 500;
+unsigned long btLongerClick = 2000;
 long btTime = 0, btTime2 = 0;
 int clickCnt = 1;
 
@@ -647,20 +651,40 @@ int clickCnt = 1;
 int checkButton()
 {
   int state = digitalRead(BUTTON);
-  if( state == LOW && stateOld == HIGH ) { btTime = millis(); stateOld = state; return 0; } // button just pressed
-  if( state == HIGH && stateOld == LOW ) { // button just released
+  if (state == LOW && stateOld == HIGH)
+  {
+    btTime = millis();
     stateOld = state;
-    if( millis()-btTime >= btDebounce && millis()-btTime < btLongClick ) {
-      if( millis()-btTime2<btDoubleClick ) clickCnt++; else clickCnt=1;
+    return 0;
+  } // button just pressed
+  if (state == HIGH && stateOld == LOW)
+  { // button just released
+    stateOld = state;
+    if (millis() - btTime >= btDebounce && millis() - btTime < btLongClick)
+    {
+      if (millis() - btTime2 < btDoubleClick)
+    clickCnt++;
+      else
+    clickCnt = 1;
       btTime2 = millis();
       return clickCnt;
     }
   }
-  if( state == LOW && millis()-btTime >= btLongerClick ) { stateOld = state; return -2; }
-  if( state == LOW && millis()-btTime >= btLongClick ) { stateOld = state; return -1; }
+  if (state == LOW && millis() - btTime >= btLongerClick)
+  {
+    stateOld = state;
+    return -2;
+  }
+  if (state == LOW && millis() - btTime >= btLongClick)
+  {
+    stateOld = state;
+    return -1;
+  }
   return 0;
 }
-// --------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+
 void setColorSet(int set)
 {
   if(set==0) {
@@ -724,7 +748,8 @@ void setColorSet(int set)
     ocrCol   = RGBto565(0,100,100);
   }
 }
-// --------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 
 void drawTabs(int mode)
 {
@@ -749,7 +774,10 @@ void drawTabs(int mode)
   lcd.drawPixel(32*i+1,1,c);
   lcd.drawPixel(i==3 ? 32*(i+1)-2 : 32*(i+1)-1,1,c);
   lcd.drawFastHLine(0,12,32*i+1,c);
-  if(i<3) lcd.drawFastHLine(32*(i+1),12,32*(3-i),c); else lcd.drawFastHLine(32*(i+1)-1,12,1,c);
+  if (i < 3)
+    lcd.drawFastHLine(32 * (i + 1), 12, 32 * (3 - i), c);
+  else
+    lcd.drawFastHLine(32 * (i + 1) - 1, 12, 1, c);
 
   font.setColor(mode==0 ? tabActTxtCol : tabIdlTxtCol); font.printStr(7,3,"CID");
   font.setColor(mode==1 ? tabActTxtCol : tabIdlTxtCol); font.printStr(40,3,"CSD");
@@ -757,7 +785,8 @@ void drawTabs(int mode)
   font.setColor(mode==3 ? tabActTxtCol : tabIdlTxtCol); font.printStr(107,3,"FS");
   yp=16;
 }
-// --------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 
 unsigned long ms;
 
@@ -766,7 +795,8 @@ void setup(void)
   Serial.begin(115200);
   pinMode(BUTTON, INPUT_PULLUP);
   lcd.init();
-  font.init(customRect, SCR_WD, SCR_HT); // custom fillRect function and screen width and height values
+  // custom fillRect function and screen width and height values
+  font.init(customRect, SCR_WD, SCR_HT);
   font.setScale(1,1);
   font.setFont(&rre_5x8); font.setFontMinWd(5);
   xp=0; yp=0;
@@ -774,7 +804,7 @@ void setup(void)
   ms=millis();
 }
 
-// --------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 int screen=0;
 int colSet=0;
@@ -814,7 +844,7 @@ void loop(void)
 
 wait:
   int bt;
-  if(screen>=0) while((bt = checkButton())==0 && millis()-ms<15000);
+  if(screen>=0) while((bt = checkButton())==0 && millis()-ms<30000);
   else          while((bt = checkButton())==0);
 
   ms = millis();
@@ -827,6 +857,3 @@ wait:
   }
   if(++screen>=4) screen=0;
 }
-
-// ------------------------------------------------
-

@@ -1,8 +1,23 @@
 # ST7735_SDinfo_stm
 
-Portable SD card tester and CID analyzer with STM32 and ST7735 LCD
+This is a portable SD Card tester and CID analyzer that utilizes an STM32 development board (blue pill) and an ST7735 compatible LCD.
+This fork has been updated for use in the PlatformIO development environment. Since the original project was built with an older version of the Arduino IDE, libraries, and toolchains, similar versions have been hardcoded in the platformio.ini.
 
-YouTube videos:
+## Features
+
+- Uses a cheap STM32 development board and an ST7735 LCD with a built-in SD socket.
+- Decodes CID, OCR, CSD, and status registers.
+- Lists partition table and optional FAT filesystem parameters.
+- **[Currently Broken]** CID unlock check based on Richard Burton's code: <https://richard.burtons.org/2016/07/01/changing-the-cid-on-an-sd-card/>
+- Requires STM32 port of SdFat, Fast ST7735, and RRE Font libraries.
+- Provided compiled binary ready to flash
+- SD Card specs: <https://www.sdcard.org/downloads/pls/>
+
+If you find this project useful please support the original author:
+
+<https://www.paypal.me/cbm80amiga>
+
+## Demonstration Videos
 
 <https://youtu.be/s2bYx58kJ_U>
 
@@ -12,37 +27,32 @@ More ST7735 and STM32 projects:
 
 <https://www.youtube.com/watch?v=o3AqITHf0mo&list=PLxb1losWErZ6y6GombzvtwRZ2l7brPv1s>
 
-## Connections (header at the top)
+## Connections
 
-|LCD pin|LCD pin name|STM32|
-|--|--|--|
- |#01| LED| 3.3V|
- |#02| SCK |PA5/SCK|
- |#03| SCA |PA7/MOSI|
- |#04| A0/DC|PA1 or any digital
- |#05| RESET|PA0 or any digital|
- |#06| CS|PA2 or any digital|
- |#07| GND | GND|
- |#08| VCC | 3.3V|
+There are several versions of the ST7735/SD Card board, each with unique pinouts and names. The following table will attempt to provide a basic pin mapping from the LCD to the STM32. Please consult your LCD's documentation if you are unsure what to do.
 
-|SD pin|SD pin name|STM32|
-|--|--|--|
-|#01| SD_SCK| PA5|
-|#02| SD_MISO |PA6|
-|#03| SD_MOSI |PA7|
-|#04| SD_CS |PA4|
+**ST7735 LCD:**
+|LCD Pin|STM32 Pin|
+|--|--|
+|LED|3.3V/5V|
+|CLK/SCK|PA5/SCK|
+|SCA/SDA/MOSI|PA7/MOSI|
+|A0/RS/DC|PA1 or any digital|
+|RESET|PA0 or any digital|
+|CS|PA2 or any digital|
+|GND|GND|
+|VCC|3.3V/5V|
 
-## Features
+**SD Card:**
+|SD Pin|STM32 Pin|
+|--|--|
+|SD_SCK|PA5|
+|SD_MISO|PA6|
+|SD_MOSI|PA7|
+|SD_CS|PA4|
 
-- Uses cheap STM32 board and ST7735 LCD with built-in SD socket
-- CID, OCR, CSD and status registers decoding
-- Partition table and optional FAT filesystem parameters
-- CID unlock check based on Richard Burton's code
-- Requires STM32 port of SdFat library
-- Fast ST7735 library and RREFont
-- Provided compiled binary ready to flash
-- SD cards specs: <https://www.sdcard.org/downloads/pls/>
-
-If you find it useful and you want to buy me a coffee or a beer:
-
-<https://www.paypal.me/cbm80amiga>
+**Button:**
+|Button Pin|STM32 Pin|
+|---|---|
+|#1|PB9|
+|#2|GND|
